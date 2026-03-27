@@ -1,4 +1,5 @@
 from textnode import TextNode, TextType
+import re
 
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     new_nodes = []
@@ -23,4 +24,77 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
             else:
                 split_nodes.append(TextNode(sections[i], text_type))
         new_nodes.extend(split_nodes)
+    return new_nodes
+
+
+def extract_markdown_images(text):
+    alt_url = re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+    return alt_url
+
+def extract_markdown_links(text):
+    alt_url = re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
+    return alt_url
+
+def split_nodes_image(old_nodes):
+    new_nodes = []
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.TEXT:
+            new_nodes.append(old_node)
+            continue
+        original_text = old_node.text
+        images = extract_markdown_images(original_text)
+
+        if len(images) == 0:
+            new_nodes.append(old_node)
+            continue
+        
+        for image in images:
+            alt_text = image[0]
+            url = image[1]
+
+            sections = original_text.split(f"![{alt_text}]({url})", 1)
+
+            if len(sections) != 2:
+                raise Exception("Invalid markdown, link section not found")
+                
+            if sections[0] != "":
+                new_nodes.append(TextNode(sections[0], TextType.TEXT))
+                
+            new_nodes.append(TextNode(alt_text, TextType.IMAGE, url))
+
+            original_text = sections[1]
+        if original_text != "":
+            new_nodes.append(TextNode(original_text, TextType.TEXT))
+    return new_nodes
+
+def split_nodes_link(old_nodes):
+    new_nodes = []
+    for old_node in old_nodes:
+        if old_node.text_type != TextType.TEXT:
+            new_nodes.append(old_node)
+            continue
+        original_text = old_node.text
+        links = extract_markdown_links(original_text)
+
+        if len(links) == 0:
+            new_nodes.append(old_node)
+            continue
+        
+        for link in links:
+            alt_text = link[0]
+            url = link[1]
+
+            sections = original_text.split(f"[{alt_text}]({url})", 1)
+
+            if len(sections) != 2:
+                raise Exception("Invalid markdown, link section not found")
+                
+            if sections[0] != "":
+                new_nodes.append(TextNode(sections[0], TextType.TEXT))
+                
+            new_nodes.append(TextNode(alt_text, TextType.LINK, url))
+
+            original_text = sections[1]
+        if original_text != "":
+            new_nodes.append(TextNode(original_text, TextType.TEXT))
     return new_nodes
