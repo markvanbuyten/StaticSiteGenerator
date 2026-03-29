@@ -1,6 +1,6 @@
 import unittest
 from textnode import TextNode, TextType
-from parserfunction import split_nodes_delimiter, extract_markdown_links,extract_markdown_images, split_nodes_image, split_nodes_link
+from parserfunction import *
 
 class TestParser(unittest.TestCase):
     def test_split_nodes_delimiter_code(self):
@@ -125,6 +125,101 @@ class TestParser(unittest.TestCase):
             TextNode("two", TextType.LINK, "url2"),
         ]
         self.assertListEqual(expected, new_nodes)
+
+    def test_text_to_textnodes(self):
+        text = "This is **text** with an *italic* word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.TEXT),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.TEXT),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.TEXT),
+            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(" and a ", TextType.TEXT),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+        self.assertListEqual(expected, nodes)
+
+    def test_text_to_textnodes_simple(self):
+        text = "This is `code` and **bold**"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("This is ", TextType.TEXT),
+            TextNode("code", TextType.CODE),
+            TextNode(" and ", TextType.TEXT),
+            TextNode("bold", TextType.BOLD),
+        ]
+        self.assertListEqual(expected, nodes)
+
+    def test_text_to_textnodes_complex(self):
+        text = "Combined: **bold***italic*`code`![img](url)[link](url)"
+        nodes = text_to_textnodes(text)
+        expected = [
+            TextNode("Combined: ", TextType.TEXT),
+            TextNode("bold", TextType.BOLD),
+            TextNode("italic", TextType.ITALIC),
+            TextNode("code", TextType.CODE),
+            TextNode("img", TextType.IMAGE, "url"),
+            TextNode("link", TextType.LINK, "url"),
+        ]
+        self.assertListEqual(expected, nodes)
+
+    def test_markdown_to_blocks(self):
+        md = """
+This is **bolded** paragraph
+
+This is another paragraph with _italic_ text and `code` here
+This is the same paragraph on a new line
+
+- This is a list
+- with items
+"""
+        blocks = markdown_to_blocks(md)
+        self.assertEqual(
+            blocks,
+            [
+                "This is **bolded** paragraph",
+                "This is another paragraph with _italic_ text and `code` here\nThis is the same paragraph on a new line",
+                "- This is a list\n- with items",
+            ],
+        )
+
+    def test_markdown_to_blocks_newlines(self):
+        # Test met veel extra enters tussen blokken en witruimte rondom
+        markdown = """
+This is block 1.
+
+
+      
+This is block 2 after many spaces and enters.
+
+"""
+        blocks = markdown_to_blocks(markdown)
+        expected = [
+            "This is block 1.",
+            "This is block 2 after many spaces and enters."
+        ]
+        self.assertListEqual(expected, blocks)
+
+    def test_markdown_to_blocks_structure(self):
+        markdown = """# Heading
+
+This is a paragraph.
+
+* Item 1
+* Item 2
+* Item 3"""
+        blocks = markdown_to_blocks(markdown)
+        expected = [
+            "# Heading",
+            "This is a paragraph.",
+            "* Item 1\n* Item 2\n* Item 3"
+        ]
+        self.assertListEqual(expected, blocks)
+        self.assertEqual(len(blocks), 3)
 
 if __name__ == "__main__":
     unittest.main()
