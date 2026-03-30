@@ -221,5 +221,20 @@ This is a paragraph.
         self.assertListEqual(expected, blocks)
         self.assertEqual(len(blocks), 3)
 
+
+    def test_block_to_block_types(self):
+        self.assertEqual(block_to_block_type("# header"), BlockType.HEADING)
+        self.assertEqual(block_to_block_type("```\ncode\n```"), BlockType.CODE)
+        
+        quote_block = "> line 1\n> line 2"
+        self.assertEqual(block_to_block_type(quote_block), BlockType.QUOTE)
+        
+        bad_olist = "1. first\n3. third"
+        self.assertEqual(block_to_block_type(bad_olist), BlockType.PARAGRAPH)
+
+    def test_block_to_block_paragraph(self):
+        self.assertEqual(block_to_block_type("Just a normal paragraph"), BlockType.PARAGRAPH)
+        self.assertEqual(block_to_block_type("#NoSpace"), BlockType.PARAGRAPH)
+
 if __name__ == "__main__":
     unittest.main()
