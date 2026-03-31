@@ -1,4 +1,6 @@
-from textnode import TextNode, TextType
+from textnode import TextNode, TextType, text_node_to_html_node
+from parentnode import ParentNode
+from leafnode import LeafNode
 import re
 from enum import Enum
 
@@ -108,6 +110,8 @@ def text_to_textnodes(text):
     nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
     nodes = split_nodes_delimiter(nodes, "*", TextType.ITALIC)
     nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
 
     return nodes
 
@@ -159,3 +163,94 @@ def block_to_block_type(markdown):
         return BlockType.OLIST
     else:
         return BlockType.PARAGRAPH
+
+def markdown_to_html_node(markdown):
+    blocks = markdown_to_blocks(markdown)
+    children = []
+    for block in blocks:
+        block_type = block_to_block_type(block)
+        html_node = create_html_node_from_block(block, block_type)
+        children.append(html_node)
+    return ParentNode("div",children)
+
+def create_html_node_from_block(block, block_type):
+    if block_type == BlockType.QUOTE:
+        return create_quote_node(block)
+    if block_type == BlockType.UNOLIST:
+        return create_unolist_node(block)
+    if block_type == BlockType.OLIST:
+        return create_olist_node(block)
+    if block_type == BlockType.CODE:
+        return create_code_node(block)
+    if block_type == BlockType.HEADING:
+        return create_heading_node(block)
+    return create_patagraph_node(block)
+
+def text_to_children(text):
+    text_nodes = text_to_textnodes(text)
+    children = []
+    for text_node in text_nodes:
+        children.append(text_node_to_html_node(text_node))
+    return children
+
+def create_quote_node(block):
+    lines = block.split("\n")
+    new_lines = []
+    for line in lines:
+        new_lines.append(line.lstrip(">").strip())
+    content = " ".join(new_lines)
+    children = text_to_children(content)
+    return ParentNode("blockquote", children)
+
+def create_unolist_node(block):
+    lines = block.split("\n")
+    list_items = []
+    for line in lines:
+        content = line[2:]
+        children = text_to_children(content)
+        list_items.append(ParentNode("li",  children))
+    return ParentNode("ul", list_items)
+
+def create_olist_node(block):
+    lines = block.split("\n")
+    list_items = []
+    for line in lines:
+        dot_index = line.find(". ")
+        if dot_index == -1:
+            content = line
+        else:
+            content = line[dot_index + 2:]
+
+        children = text_to_children(content)
+        list_items.append(ParentNode("li",  children))
+    return ParentNode("ol", list_items) 
+
+def create_code_node(block):
+    lines = block.split("\n")
+    if len(lines) > 2:
+        content = "\n".join(lines[1:-1])
+    else:
+        content = block.strip("`").strip()
+    
+    if not content.endswith("\n"):
+        content += "\n"
+        
+    code_leaf = LeafNode("code", content)
+    return ParentNode("pre", [code_leaf])
+
+def create_heading_node(block):
+    level = 0
+    for char in block:
+        if char == "#":
+            level += 1
+        else:
+            break
+    content = block[level + 1:]
+    children = text_to_children(content)
+    return ParentNode(f"h{level}", children)
+
+def create_patagraph_node(block):
+    lines = block.split("\n")
+    paragraph = " ".join(lines)
+    children = text_to_children(paragraph)
+    return ParentNode("p", children)

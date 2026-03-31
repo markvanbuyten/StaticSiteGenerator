@@ -236,5 +236,78 @@ This is a paragraph.
         self.assertEqual(block_to_block_type("Just a normal paragraph"), BlockType.PARAGRAPH)
         self.assertEqual(block_to_block_type("#NoSpace"), BlockType.PARAGRAPH)
 
+    def test_paragraphs(self):
+        md = """
+This is **bolded** paragraph
+text in a p
+tag here
+
+This is another paragraph with _italic_ text and `code` here"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><p>This is <b>bolded</b> paragraph text in a p tag here</p><p>This is another paragraph with <i>italic</i> text and <code>code</code> here</p></div>",
+        )
+
+    def test_codeblock(self):
+        md = """
+```
+This is text that _should_ remain
+the **same** even with inline stuff
+```"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        self.assertEqual(
+            html,
+            "<div><pre><code>This is text that _should_ remain\nthe **same** even with inline stuff\n</code></pre></div>",
+         )
+    
+    def test_lists(self):
+        md = """
+- This is a list item with **bold**
+- This is another item with a [link](https://boot.dev)
+
+1. First ordered item
+2. Second ordered item"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        expected = (
+            "<div>"
+            "<ul>"
+            "<li>This is a list item with <b>bold</b></li>"
+            "<li>This is another item with a <a href=\"https://boot.dev\">link</a></li>"
+            "</ul>"
+            "<ol>"
+            "<li>First ordered item</li>"
+            "<li>Second ordered item</li>"
+            "</ol>"
+            "</div>"
+        )
+        self.assertEqual(html, expected)
+
+    def test_headings_and_quotes(self):
+        md = """
+# Main Heading
+
+> This is a quote
+> that spans multiple lines
+
+### Sub Heading"""
+
+        node = markdown_to_html_node(md)
+        html = node.to_html()
+        expected = (
+            "<div>"
+            "<h1>Main Heading</h1>"
+            "<blockquote>This is a quote that spans multiple lines</blockquote>"
+            "<h3>Sub Heading</h3>"
+            "</div>"
+        )
+        self.assertEqual(html, expected)
+
 if __name__ == "__main__":
     unittest.main()
