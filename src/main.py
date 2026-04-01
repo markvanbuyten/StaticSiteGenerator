@@ -1,9 +1,14 @@
-from textnode import TextNode, TextType
+from static_to_public import *
 
 def main():
-    new_node = TextNode("This is some anchor text", TextType.LINK, "https://www.boot.dev")
+    dir_static = "./static"
+    dir_public = "./public"
 
-    print(new_node)
+    print("Cleaning public directory...")
+    clean_directory(dir_public)
+
+    print("Copying static files...")
+    copy_files_recusive(dir_static, dir_public)
 
 if __name__ == "__main__":
     main()

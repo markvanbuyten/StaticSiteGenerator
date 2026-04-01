@@ -24,3 +24,6 @@ Thumbs.db
 # IDE's
 .vscode/
 .idea/
+
+# Location
+public/
